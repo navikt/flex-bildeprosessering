@@ -6,7 +6,7 @@ import multer from 'multer';
 const app = express();
 const port = 8080; // default port to listen
 
-const storage = multer.memoryStorage();
+const storage = multer.memoryStorage(); // TODO: Test at dette bare er et mellomlager
 const upload = multer({
     storage,
     limits: {
@@ -15,7 +15,6 @@ const upload = multer({
     }
 });
 
-/*
 // TODO: Sett opp CORS og https
 const corsOptions = {
     origin: 'http://localhost:3000',
@@ -25,23 +24,44 @@ const corsOptions = {
         'Access-Control-Allow-Methods', 'POST', 'Content-Type'
     ]
 }
-const detteErLov = cors(corsOptions)
-app.options("/prosesser", detteErLov)
-*/
+const corsHandler = cors(corsOptions)
 
-app.post("/prosesser", upload.single('file'), async ( req, res ) => {
-    console.log('Mottok data: ' + req.file.mimetype)
+app.post("/prosesser",
+    upload.single('file'),
+    corsHandler,
+    async (req, res) => {
+        console.log('Mottok data: ' + req.file.size + ' bytes ' + req.file.mimetype)
 
-    sharp(req.file.buffer)
-        .jpeg()
-        .toBuffer((e, b) => {
-            res.send(b)
-        })
+        /*
+        sharp(req.file.buffer)
+            .resize({ width: 50 })
+            .toBuffer()
+            .then(data => {
+                res.send(data)
+                console.log('Clone size: ' + data.byteLength + ' bytes ')
+            })
 
-    // res.sendStatus(200)
-} )
+         */
+
+        sharp(req.file.buffer)
+            .resize(600, 1200, {
+                fit: sharp.fit.inside,          // Beholder ratio, men går ikke over høyde eller bredde
+            })
+            .toFormat('jpg', {
+                quality: 100
+            })
+            .toBuffer()
+            .then((img) => {
+                res.send(img)
+                console.log('Sendte tilbake: ' + img.byteLength + ' bytes jpg')
+            })
+            .catch((reason) => {
+                console.log('Feil: ' + reason.message)
+                res.status(500)
+            })
+    })
 
 // start the Express server
-app.listen( port, () => {
-    console.log( `server started at http://localhost:${ port }` );
-} )
+app.listen(port, () => {
+    console.log(`server started at port ${port}`);
+})
