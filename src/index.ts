@@ -5,6 +5,7 @@ import multer from 'multer';
 
 const app = express();
 const port = 8080; // default port to listen
+const corsOrigin = process.env.ALLOWED_ORIGINS || 'http://localhost:4116'
 
 const storage = multer.memoryStorage(); // TODO: Test at dette bare er et mellomlager
 const upload = multer({
@@ -17,11 +18,12 @@ const upload = multer({
 
 // TODO: Sett opp CORS og https
 const corsOptions = {
-    origin: 'http://localhost:3000',
+    origin: corsOrigin,
     optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
     credentials: true,
+    methods: 'POST',
     allowedHeaders: [
-        'Access-Control-Allow-Methods', 'POST', 'Content-Type'
+        'Access-Control-Allow-Methods', 'Content-Type', 'Access-Control-Allow-Origin'
     ]
 }
 const corsHandler = cors(corsOptions)
@@ -31,17 +33,6 @@ app.post("/prosesser",
     corsHandler,
     async (req, res) => {
         console.log('Mottok data: ' + req.file.size + ' bytes ' + req.file.mimetype)
-
-        /*
-        sharp(req.file.buffer)
-            .resize({ width: 50 })
-            .toBuffer()
-            .then(data => {
-                res.send(data)
-                console.log('Clone size: ' + data.byteLength + ' bytes ')
-            })
-
-         */
 
         sharp(req.file.buffer)
             .resize(600, 1200, {
