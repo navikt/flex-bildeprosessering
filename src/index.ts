@@ -7,7 +7,7 @@ const app = express();
 const port = 8080; // default port to listen
 const corsOrigin = process.env.ALLOWED_ORIGINS || 'http://localhost:4116'
 
-const storage = multer.memoryStorage(); // TODO: Test at dette bare er et mellomlager
+const storage = multer.memoryStorage(); // Filer fjernes automatisk, her har vi ikke kontroll og mange/store request kan fylle minne
 const upload = multer({
     storage,
     limits: {
