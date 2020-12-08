@@ -16,7 +16,6 @@ const upload = multer({
     }
 });
 
-// TODO: Sett opp CORS og https
 const corsOptions = {
     origin: corsOrigin,
     optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
