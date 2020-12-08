@@ -27,7 +27,7 @@ jobs:
       - name: Bruk sharp for x64
         run: |
           rm -rf node_modules/sharp
-          npm install --arch=x64 --platform=linux --target=8.10.0 sharp
+          npm install --arch=x64 --platform=linux --target=8.10.0 sharp@0.26.3
       - name: Run audit
         run: npm audit --audit-level=moderate
       - name: Build application
