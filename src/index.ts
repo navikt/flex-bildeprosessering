@@ -46,6 +46,7 @@ app.post("/prosesser",
         logger.log('info', 'Mottok data: ' + req.file.size + ' bytes ' + req.file.mimetype)
         try {
             const img = await sharp(req.file.buffer)
+                .rotate()
                 .resize(600, 1200, {
                     fit: sharp.fit.inside,          // Beholder ratio, men går ikke over høyde eller bredde
                 })
