@@ -50,7 +50,7 @@ app.post("/prosesser",
                     fit: sharp.fit.inside,          // Beholder ratio, men går ikke over høyde eller bredde
                 })
                 .toFormat('jpg', {
-                    quality: 100
+                    quality: 80
                 })
                 .toBuffer()
             res.set("Content-Type", "image/jpg")

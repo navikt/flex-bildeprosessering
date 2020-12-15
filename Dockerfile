@@ -1,7 +1,10 @@
-FROM node
+FROM alpine:20200917
 
-WORKDIR /usr/src/app
+WORKDIR /app
 COPY . .
+RUN apk add --no-cache binutils make gcc g++ nodejs npm vips vips-dev
+RUN npm i
+RUN npm run build
 
 EXPOSE 8080
 
