@@ -1,8 +1,9 @@
 {
   "name": "flex-bildeprosessering",
   "version": "1.0.0",
-  "description": "",
+  "description": "en enkel http-basert app for å normalisere bilder",
   "main": "dist/index.js",
+  "repository": "https://github.com/navikt/flex-bildeprosessering",
   "scripts": {
     "prebuild": "eslint --ext=ts src --fix",
     "build": "tsc",
