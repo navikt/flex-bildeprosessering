@@ -1,0 +1,38 @@
+apiVersion: "nais.io/v1alpha1"
+kind: "Application"
+metadata:
+  name: flex-bildeprosessering
+  namespace: flex
+  labels:
+    team: flex
+spec:
+  image: {{ image }}
+  port: 8080
+  replicas:
+    min: 1
+    max: 2
+    cpuThresholdPercentage: 70
+  liveness:
+    path: /is_alive
+    timeout: 1
+    initialDelay: 5
+    periodSeconds: 5
+    failureThreshold: 30
+  readiness:
+    path: /is_alive
+    timeout: 1
+    initialDelay: 5
+    periodSeconds: 5
+    failureThreshold: 30
+  leaderElection: false
+  resources:
+    limits:
+      cpu: 400m
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  accessPolicy:
+    inbound:
+      rules:
+        - application: flex-bucket-uploader
