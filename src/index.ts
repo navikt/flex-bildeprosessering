@@ -38,6 +38,9 @@ app.post('/prosesser', async (req, res) => {
     }
 })
 
+app.get('/is_alive', async (_, res) => {
+    res.sendStatus(200)
+})
 
 app.listen(port, () => {
     logger.log('info', `server started at port ${port}`)
