@@ -36,3 +36,6 @@ spec:
     inbound:
       rules:
         - application: flex-bucket-uploader
+    outbound:
+      rules:
+        - application: flex-bucket-uploader
