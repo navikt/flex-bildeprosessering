@@ -1,7 +1,6 @@
 import express from 'express'
-import cors from 'cors'
-import multer from 'multer'
 import winston from 'winston'
+import bodyParser from 'body-parser'
 
 import { prosesser } from './prosesser'
 
@@ -11,50 +10,33 @@ const logger = winston.createLogger({
     ]
 })
 
-const app = express()
-const port = 8080 // default port to listen
-const corsOrigin = process.env.ALLOWED_ORIGINS || 'http://localhost:4116'
+const uploadOptions = {
+    inflate: true,
+    limit: '20Mb',
+    type: '*/*'
+}
 
-const storage = multer.memoryStorage() // Filer fjernes automatisk, her har vi ikke kontroll og mange/store request kan fylle minne
-const upload = multer({
-    storage,
-    limits: {
-        files: 1,
-        fileSize: 1024 * 1024 * 10
+const app = express()
+app.use(bodyParser.raw(uploadOptions))
+const port = 8080 // default port to listen
+
+app.post('/prosesser', async (req, res) => {
+    if (req.body === undefined) {
+        logger.log('error', 'Mottok ikke data')
+        res.sendStatus(500)
+        return
+    }
+    logger.log('info', 'Mottok data')
+    try {
+        const img = await prosesser(req.body)
+        res.set('Content-Type', 'image/jpg')
+        res.send(img)
+        logger.log('info', 'Sendte tilbake: ' + img.byteLength + ' bytes jpg')
+    } catch (reason) {
+        logger.log('error', reason.message)
+        res.sendStatus(500)
     }
 })
-
-const corsOptions = {
-    origin: corsOrigin,
-    optionsSuccessStatus: 200,
-    credentials: true,
-    methods: 'POST',
-    allowedHeaders: [
-        'Access-Control-Allow-Methods', 'Content-Type', 'Access-Control-Allow-Origin'
-    ]
-}
-const corsHandler = cors(corsOptions)
-
-app.post('/prosesser',
-    upload.single('file'),
-    corsHandler,
-    async (req, res) => {
-        if (req.file === undefined) {
-            logger.log('error', 'mottok ikke data')
-            res.sendStatus(500)
-            return
-        }
-        logger.log('info', 'Mottok data: ' + req.file.size + ' bytes ' + req.file.mimetype)
-        try {
-            const img = await prosesser(req.file.buffer)
-            res.set('Content-Type', 'image/jpg')
-            res.send(img)
-            logger.log('info', 'Sendte tilbake: ' + img.byteLength + ' bytes jpg')
-        } catch (reason) {
-            logger.log('error', reason.message)
-            res.sendStatus(500)
-        }
-    })
 
 
 app.listen(port, () => {
