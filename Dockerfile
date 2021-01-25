@@ -1,4 +1,4 @@
-FROM alpine:20200917
+FROM alpine:3.13
 
 WORKDIR /app
 COPY . .
