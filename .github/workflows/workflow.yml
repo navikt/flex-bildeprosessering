@@ -4,73 +4,50 @@ env:
   APP: flex-bildeprosessering
 jobs:
   build-and-publish:
-    name: Bygg, test og push Docker image
+    name: Bygg, test og publiser docker image
     runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.lag-image.outputs.image }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v1
-      - name: Generer versjon og image navn
+        uses: actions/checkout@v3
+      - name: Generer image
+        id: lag-image
         run: |
           TIME=$(TZ="Europe/Oslo" date +%Y.%m.%d-%H.%M)
           COMMIT=$(git rev-parse --short=8 HEAD)
           VERSION=$TIME-$COMMIT
-          echo "IMAGE=ghcr.io/navikt/$APP:$VERSION" >> $GITHUB_ENV
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-      - run: echo $VERSION > VERSION.txt
-      - name: Last opp VERSION til neste job
-        uses: actions/upload-artifact@v1
-        with:
-          name: VERSION.txt
-          path: VERSION.txt
+          echo "::set-output name=image::ghcr.io/navikt/$APP:$VERSION"
       - name: Docker login
-        if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/dev-')
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: docker login ghcr.io -u ${GITHUB_REPOSITORY} -p ${GITHUB_TOKEN}
+        uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b
+        if: github.ref_name == 'master' || startsWith(github.ref_name, 'dev-')
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Bygg og push Docker image
-        if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/dev-')
+        if: github.ref_name == 'master' || startsWith(github.ref_name, 'dev-')
         run: |
-          docker build . -f Dockerfile -t ${IMAGE}
-          docker push ${IMAGE}
+          docker build . -f Dockerfile -t ${{ steps.lag-image.outputs.image }}
+          docker push ${{ steps.lag-image.outputs.image }}
 
-  deploy-to-dev-gcp:
-    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/dev-')
-    name: Deploy to dev-gcp
+  snyk-npm:
     needs: build-and-publish
-    concurrency: deploy-to-dev-gcp
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions/download-artifact@v1
-        with:
-          name: VERSION.txt
-          path: .
-      - run: echo "VERSION=`cat VERSION.txt`" >> $GITHUB_ENV
-      - run: echo "IMAGE=ghcr.io/navikt/$APP:$VERSION" >> $GITHUB_ENV
-      - name: Deploy to dev-gcp
-        uses: nais/deploy/actions/deploy@v1
-        env:
-          APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY }}
-          CLUSTER: dev-gcp
-          RESOURCE: naiserator.yaml
+    uses: navikt/flex-github-actions-workflows/.github/workflows/snyk-npm.yml@master
+    secrets: inherit
 
-  deploy-to-prod-gcp:
-    if: github.ref == 'refs/heads/master'
-    name: Deploy to prod-gcp
+  snyk-docker:
     needs: build-and-publish
-    concurrency: deploy-to-prod-gcp
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions/download-artifact@v1
-        with:
-          name: VERSION.txt
-          path: .
-      - run: echo "VERSION=`cat VERSION.txt`" >> $GITHUB_ENV
-      - run: echo "IMAGE=ghcr.io/navikt/$APP:$VERSION" >> $GITHUB_ENV
-      - name: Deploy to prod-gcp
-        uses: nais/deploy/actions/deploy@v1
-        env:
-          APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY }}
-          CLUSTER: prod-gcp
-          RESOURCE: naiserator.yaml
+    uses: navikt/flex-github-actions-workflows/.github/workflows/snyk-docker.yml@master
+    with:
+      image: ${{ needs.build-and-publish.outputs.image }}
+    secrets: inherit
+
+  nais-deploy:
+    needs: build-and-publish
+    uses: navikt/flex-github-actions-workflows/.github/workflows/nais-deploy-dev-og-prod.yml@master
+    with:
+      image: ${{ needs.build-and-publish.outputs.image }}
+      app: ${{ inputs.app }}
+    secrets: inherit
