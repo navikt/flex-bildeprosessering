@@ -1,6 +1,6 @@
 # flex-bildeprosessering
 
-
+Note: This repository is archived and the application is not in use anymore.
 
 ## Technologies used
 * Express
